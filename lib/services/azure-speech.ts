@@ -150,7 +150,11 @@ export async function azureTranscribeBuffer(
       );
     });
   } finally {
-    await recognizer.close().catch(() => undefined);
+    try {
+      recognizer.close();
+    } catch {
+      /* ignore dispose errors */
+    }
   }
 
   const joined = options.includeTimestamps
