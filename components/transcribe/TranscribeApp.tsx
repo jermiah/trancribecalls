@@ -219,7 +219,14 @@ export function TranscribeApp() {
         const up = await uploadFileToBlob(job.file);
         blobUrl = up.url;
       } catch (e) {
-        const msg = e instanceof Error ? e.message : "Upload failed.";
+        let msg = e instanceof Error ? e.message : "Upload failed.";
+        if (msg.includes("client token") || msg.includes("BLOB_READ_WRITE_TOKEN")) {
+          msg =
+            "Upload blocked: BLOB_READ_WRITE_TOKEN is not set in Vercel. " +
+            "Go to Vercel → your project → Storage → Blob → link the store, then redeploy.";
+        } else if (msg.includes("Failed to fetch") || msg.includes("NetworkError")) {
+          msg = `Network error during upload. Check your connection and try again. (${msg})`;
+        }
         setJobs((prev) =>
           prev.map((j) =>
             j.id === job.id

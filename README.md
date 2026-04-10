@@ -79,6 +79,14 @@ Open [http://localhost:3000](http://localhost:3000).
 
 Create a Blob store in the Vercel dashboard and copy the **read/write** token into `.env.local`.
 
+> **Common error: "Vercel Blob: Failed to retrieve the client token"**  
+> This means `BLOB_READ_WRITE_TOKEN` is missing or invalid. Fix:
+> 1. **Vercel dashboard** → your project → **Storage** tab → **Create / Connect Blob store** (it auto-adds the token to environment variables).  
+> 2. **Redeploy** the project after linking the store.  
+> 3. **Locally**: run `vercel env pull` or copy the token into `.env.local`.
+>
+> **Note on filenames:** File names with special characters such as `[`, `]`, or spaces (common in CXone exports, e.g. `recording_[UTC]_...mp4`) are automatically sanitized for the Blob upload path. The **original filename** is always preserved as the heading in the Word document.
+
 ---
 
 ## Deploying to Vercel
