@@ -4,7 +4,7 @@ export interface DeepgramTranscribeOptions {
 
 function buildListenUrl(options: DeepgramTranscribeOptions): string {
   const params = new URLSearchParams({
-    model: "nova-2-phonecall",
+    model: "nova-3",
     smart_format: "true",
     punctuate: "true",
   });
