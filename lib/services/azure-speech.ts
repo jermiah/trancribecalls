@@ -12,23 +12,29 @@ function formatSeconds(s: number): string {
   return `${pad(h)}:${pad(m)}:${pad(sec)}`;
 }
 
-function pickContainer(
-  contentType: string,
-  filename: string
-): sdk.AudioStreamContainerFormat {
-  const ct = contentType.toLowerCase();
-  const fn = filename.toLowerCase();
-  if (fn.endsWith(".mp3") || ct.includes("mpeg") || ct.includes("mp3")) {
-    return sdk.AudioStreamContainerFormat.MP3;
-  }
-  if (fn.endsWith(".mp4") || ct.includes("mp4")) {
-    const fmt = sdk.AudioStreamContainerFormat as unknown as Record<
-      string,
-      sdk.AudioStreamContainerFormat
-    >;
-    if (fmt.MP4 !== undefined) return fmt.MP4;
-  }
-  return sdk.AudioStreamContainerFormat.MP3;
+/**
+ * SDK 1.42+ no longer types `getCompressedFormat` / `AudioStreamContainerFormat` on the
+ * public entry. We use `getWaveFormat` with `AudioFormatTag.MP3`, which matches how the
+ * SDK represents compressed MP3 streams. AAC inside `.mp4` may not work; use Deepgram
+ * for those files if Azure fails.
+ */
+function pickStreamFormat(
+  _contentType: string,
+  _filename: string
+): sdk.AudioStreamFormat {
+  return sdk.AudioStreamFormat.getWaveFormat(
+    16000,
+    16,
+    1,
+    sdk.AudioFormatTag.MP3
+  );
+}
+
+function bufferChunkToArrayBuffer(chunk: Buffer): ArrayBuffer {
+  return chunk.buffer.slice(
+    chunk.byteOffset,
+    chunk.byteOffset + chunk.byteLength
+  ) as ArrayBuffer;
 }
 
 export async function azureTestConnection(
@@ -73,13 +79,13 @@ export async function azureTranscribeBuffer(
     "20000"
   );
 
-  const container = pickContainer(contentType, filename);
-  const format = sdk.AudioStreamFormat.getCompressedFormat(container);
+  const format = pickStreamFormat(contentType, filename);
   const pushStream = sdk.AudioInputStream.createPushStream(format);
 
   const chunkSize = 64 * 1024;
   for (let i = 0; i < buffer.length; i += chunkSize) {
-    pushStream.write(buffer.subarray(i, Math.min(i + chunkSize, buffer.length)));
+    const chunk = buffer.subarray(i, Math.min(i + chunkSize, buffer.length));
+    pushStream.write(bufferChunkToArrayBuffer(chunk));
   }
   pushStream.close();
 
